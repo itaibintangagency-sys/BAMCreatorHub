@@ -1,0 +1,126 @@
+{
+  "name": "WF-01 Auto-fetch Gambar Produk",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "auto-fetch-gambar",
+        "httpMethod": "POST",
+        "responseMode": "onReceived"
+      },
+      "name": "Webhook: produk baru",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$json[\"campaign_link\"]}}",
+        "options": { "followRedirect": true, "ignoreResponseCode": true }
+      },
+      "name": "Resolve shortlink",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "sourceData": "={{$json[\"data\"]}}",
+        "extractionValues": {
+          "values": [
+            { "key": "og_image", "cssSelector": "meta[property='og:image']", "attribute": "content" },
+            { "key": "og_title", "cssSelector": "meta[property='og:title']", "attribute": "content" }
+          ]
+        }
+      },
+      "name": "Extract og:image",
+      "type": "n8n-nodes-base.htmlExtract",
+      "typeVersion": 1,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            { "value1": "={{$json[\"og_image\"]}}", "operation": "contains", "value2": "susercontent" }
+          ]
+        }
+      },
+      "name": "Gambar valid?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [860, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{$json[\"og_image\"]}}",
+        "options": {}
+      },
+      "name": "Download gambar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [1080, 220]
+    },
+    {
+      "parameters": {
+        "resource": "storage",
+        "operation": "upload",
+        "bucketName": "product-images",
+        "fileName": "={{$json[\"product_id\"]}}.jpg"
+      },
+      "name": "Upload ke Supabase Storage",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1300, 220]
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "tableId": "products",
+        "filterType": "manual",
+        "matchingColumns": "id",
+        "fieldsUi": {
+          "fieldValues": [
+            { "fieldId": "product_image", "fieldValue": "={{$json[\"publicUrl\"]}}" },
+            { "fieldId": "image_source", "fieldValue": "auto" },
+            { "fieldId": "image_status", "fieldValue": "done" }
+          ]
+        }
+      },
+      "name": "Update produk (berhasil)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1520, 220]
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "update",
+        "tableId": "products",
+        "filterType": "manual",
+        "matchingColumns": "id",
+        "fieldsUi": {
+          "fieldValues": [{ "fieldId": "image_status", "fieldValue": "pending" }]
+        }
+      },
+      "name": "Update produk (gagal, perlu manual)",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1080, 400]
+    }
+  ],
+  "connections": {
+    "Webhook: produk baru": { "main": [[{ "node": "Resolve shortlink", "type": "main", "index": 0 }]] },
+    "Resolve shortlink": { "main": [[{ "node": "Extract og:image", "type": "main", "index": 0 }]] },
+    "Extract og:image": { "main": [[{ "node": "Gambar valid?", "type": "main", "index": 0 }]] },
+    "Gambar valid?": {
+      "main": [
+        [{ "node": "Download gambar", "type": "main", "index": 0 }],
+        [{ "node": "Update produk (gagal, perlu manual)", "type": "main", "index": 0 }]
+      ]
+    },
+    "Download gambar": { "main": [[{ "node": "Upload ke Supabase Storage", "type": "main", "index": 0 }]] },
+    "Upload ke Supabase Storage": { "main": [[{ "node": "Update produk (berhasil)", "type": "main", "index": 0 }]] }
+  }
+}

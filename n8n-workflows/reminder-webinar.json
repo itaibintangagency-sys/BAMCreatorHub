@@ -1,0 +1,53 @@
+{
+  "name": "WF-03 Reminder Webinar Harian",
+  "nodes": [
+    {
+      "parameters": { "rule": { "interval": [{ "field": "cronExpression", "expression": "0 8 * * *" }] } },
+      "name": "Cron: tiap jam 8 pagi",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "getAll",
+        "tableId": "webinars",
+        "filterType": "manual",
+        "filters": { "conditions": [{ "keyName": "event_date", "condition": "eq", "keyValue": "={{$today.format('yyyy-MM-dd')}}" }] }
+      },
+      "name": "Ambil webinar hari ini",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [420, 300]
+    },
+    {
+      "parameters": {
+        "resource": "row",
+        "operation": "getAll",
+        "tableId": "creators",
+        "filterType": "manual"
+      },
+      "name": "Ambil Creator eligible",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [640, 300]
+    },
+    {
+      "parameters": {
+        "chatId": "={{$json[\"telegram_chat_id\"]}}",
+        "text": "=Reminder: webinar \"{{$json[\"title\"]}}\" hari ini jam {{$json[\"event_time\"]}}."
+      },
+      "name": "Kirim reminder",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [860, 300],
+      "notes": "Ganti node ini dengan channel yang dipilih (WhatsApp/Email) sesuai keputusan final."
+    }
+  ],
+  "connections": {
+    "Cron: tiap jam 8 pagi": { "main": [[{ "node": "Ambil webinar hari ini", "type": "main", "index": 0 }]] },
+    "Ambil webinar hari ini": { "main": [[{ "node": "Ambil Creator eligible", "type": "main", "index": 0 }]] },
+    "Ambil Creator eligible": { "main": [[{ "node": "Kirim reminder", "type": "main", "index": 0 }]] }
+  }
+}
