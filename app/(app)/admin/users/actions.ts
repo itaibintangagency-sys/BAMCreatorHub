@@ -7,9 +7,9 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 // ============================================================
 // Server Actions — Kelola Akun Internal
 // Semua fungsi di sini WAJIB dipanggil hanya dari halaman yang
-// sudah diproteksi middleware role super_admin (lihat catatan
-// di page.tsx). Sebagai lapis kedua, RLS policy "Super admin can
-// manage cm_profiles" juga akan menolak query dari role lain.
+// sudah diproteksi (lihat page.tsx — cek is_owner). Sebagai
+// lapis kedua, RLS policy "Owner can manage cm_profiles" juga
+// akan menolak query dari akun yang bukan owner.
 // ============================================================
 
 async function getServerSupabase() {
@@ -42,6 +42,7 @@ export async function inviteUser(formData: FormData): Promise<InviteUserResult> 
   const nama = String(formData.get('nama') ?? '').trim()
   const email = String(formData.get('email') ?? '').trim().toLowerCase()
   const role = String(formData.get('role') ?? '')
+  const isOwner = formData.get('is_owner') === 'on'
 
   if (!nama || !email || !['super_admin', 'cm'].includes(role)) {
     return { success: false, error: 'Data tidak lengkap atau role tidak valid.' }
@@ -54,14 +55,14 @@ export async function inviteUser(formData: FormData): Promise<InviteUserResult> 
     email,
     role,
     status: 'invited',
+    is_owner: isOwner,
   })
 
   if (error) {
     if (error.code === '23505') {
-      // unique_cm_email violation
       return { success: false, error: 'Email ini sudah terdaftar.' }
     }
-    return { success: false, error: 'Gagal menyimpan. Pastikan Anda login sebagai Super Admin.' }
+    return { success: false, error: 'Gagal menyimpan. Pastikan Anda punya akses kelola akun.' }
   }
 
   revalidatePath('/admin/users')
@@ -78,6 +79,49 @@ export async function revokeUser(rowId: string): Promise<InviteUserResult> {
 
   if (error) {
     return { success: false, error: 'Gagal mencabut akses.' }
+  }
+
+  revalidatePath('/admin/users')
+  return { success: true }
+}
+
+export async function reactivateUser(rowId: string): Promise<InviteUserResult> {
+  const supabase = await getServerSupabase()
+
+  // Kembalikan ke 'invited' (BUKAN langsung 'active') supaya proses
+  // aktivasi id tetap lewat alur normal saat orang itu login lagi.
+  const { error } = await supabase
+    .from('cm_profiles')
+    .update({ status: 'invited' })
+    .eq('row_id', rowId)
+
+  if (error) {
+    return { success: false, error: 'Gagal mengaktifkan kembali akses.' }
+  }
+
+  revalidatePath('/admin/users')
+  return { success: true }
+}
+
+export async function updateUser(formData: FormData): Promise<InviteUserResult> {
+  const rowId = String(formData.get('row_id') ?? '')
+  const nama = String(formData.get('nama') ?? '').trim()
+  const role = String(formData.get('role') ?? '')
+  const isOwner = formData.get('is_owner') === 'on'
+
+  if (!rowId || !nama || !['super_admin', 'cm'].includes(role)) {
+    return { success: false, error: 'Data tidak lengkap atau role tidak valid.' }
+  }
+
+  const supabase = await getServerSupabase()
+
+  const { error } = await supabase
+    .from('cm_profiles')
+    .update({ nama, role, is_owner: isOwner })
+    .eq('row_id', rowId)
+
+  if (error) {
+    return { success: false, error: 'Gagal menyimpan perubahan. Pastikan Anda punya akses kelola akun.' }
   }
 
   revalidatePath('/admin/users')

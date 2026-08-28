@@ -21,6 +21,7 @@ export type CurrentProfile =
       id: string
       name: string
       email: string
+      is_owner: boolean
     }
   | {
       role: 'creator'
@@ -45,7 +46,7 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
   // 1. Cek cm_profiles DULU (Layer 1: Super Admin & CM)
   const { data: cmProfile, error: cmError, status: cmStatus } = await supabase
     .from('cm_profiles')
-    .select('id, nama, email, role, status')
+    .select('id, nama, email, role, status, is_owner')
     .eq('id', user.id)
     .eq('status', 'active')
     .maybeSingle()
@@ -68,6 +69,7 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
       id: cmProfile.id,
       name: cmProfile.nama,
       email: cmProfile.email,
+      is_owner: cmProfile.is_owner ?? false,
     }
   }
 
