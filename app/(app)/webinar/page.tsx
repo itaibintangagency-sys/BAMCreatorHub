@@ -34,11 +34,15 @@ export default async function WebinarPage() {
     attendedWebinarIds = new Set((attendance ?? []).map((a) => a.webinar_id));
   }
 
+  // Ambil dulu di luar closure (TypeScript tidak mewarisi narrowing
+  // `!profile` ke dalam nested function meski variabelnya const)
+  const creatorGoldenTick = profile.role === "creator" ? profile.status_golden_tick : false;
+
   function computeEligible(w: { eligibility_type: string; id: string }): boolean {
     if (isInternal) return true; // Super Admin & CM selalu bisa lihat semua
     if (w.eligibility_type === "Eligible for All") return true;
     if (w.eligibility_type === "Golden Tick Only") {
-      return isCreator && profile.role === "creator" ? profile.status_golden_tick : false;
+      return isCreator && creatorGoldenTick;
     }
     if (w.eligibility_type === "Invite Only") {
       return invitedWebinarIds.has(w.id);
