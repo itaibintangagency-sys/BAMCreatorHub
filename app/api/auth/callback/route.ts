@@ -12,26 +12,24 @@ export async function GET(request: Request) {
 
   const cookieStore = cookies();
 
-  // Kumpulkan semua cookie yang Supabase ingin set — JANGAN tulis
-  // ke cookieStore langsung, kumpulkan dulu untuk ditaruh di response.
-  const cookiesToSet: { name: string; value: string; options: any }[] = [];
+  // Kumpulkan semua cookie yang Supabase ingin set lewat setAll — ini
+  // interface yang direkomendasikan resmi oleh @supabase/ssr, dan yang
+  // benar menangani token panjang yang dipecah jadi beberapa cookie
+  // (sb-xxx-auth-token.0, .1, dst). Interface get/set/remove satu-satu
+  // yang dipakai sebelumnya tidak diam-diam salah menangani kasus ini.
+  let cookiesToSet: { name: string; value: string; options: any }[] = [];
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          // BACA dari cookieStore — ini bisa akses httpOnly cookies
-          // termasuk PKCE code_verifier
-          return cookieStore.get(name)?.value;
+        getAll() {
+          // Baca dari cookieStore — bisa akses httpOnly cookies termasuk PKCE code_verifier
+          return cookieStore.getAll();
         },
-        set(name: string, value: string, options: any) {
-          // KUMPULKAN, jangan langsung tulis
-          cookiesToSet.push({ name, value, options });
-        },
-        remove(name: string, options: any) {
-          cookiesToSet.push({ name, value: "", options: { ...options, maxAge: 0 } });
+        setAll(cookies) {
+          cookiesToSet = cookies;
         },
       },
     }
@@ -47,9 +45,9 @@ export async function GET(request: Request) {
   }
 
   // ================================================================
-  // KUNCI: Kembalikan HTML 200 (BUKAN redirect 307).
-  // Browser PASTI memproses Set-Cookie pada response 200.
-  // Setelah cookie tersimpan, JavaScript redirect ke /dashboard.
+  // Tetap kembalikan HTML 200 (bukan redirect 307) sebagai lapisan
+  // pertahanan tambahan — beberapa proxy/edge cache lebih konsisten
+  // memproses Set-Cookie pada response 200 dibanding pada redirect.
   // ================================================================
   const html = `<!DOCTYPE html>
 <html>
@@ -65,11 +63,8 @@ export async function GET(request: Request) {
     headers: { "Content-Type": "text/html; charset=utf-8" },
   });
 
-  // Taruh SEMUA cookie yang dikumpulkan ke response object ini.
-  // Karena response-nya 200 (bukan redirect), browser PASTI
-  // memproses Set-Cookie headers sebelum menjalankan JavaScript.
   for (const { name, value, options } of cookiesToSet) {
-    response.cookies.set({ name, value, ...options });
+    response.cookies.set(name, value, options);
   }
 
   return response;
