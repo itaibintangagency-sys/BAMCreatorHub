@@ -6,14 +6,12 @@ export default function LoginInternalPage() {
   const supabase = createClient();
 
   async function handleGoogleLogin() {
-    // Pakai window.location.origin (domain saat ini di browser),
-    // BUKAN process.env.NEXT_PUBLIC_SITE_URL — supaya tidak pernah
-    // salah/kadaluarsa meski domain Vercel berubah-ubah, dan tidak
-    // ada risiko trailing slash atau env var lupa di-update.
+    // Redirect ke CLIENT page /auth/callback (bukan /api/auth/callback)
+    // supaya exchange code terjadi di browser, bukan di server.
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/api/auth/callback`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
   }
