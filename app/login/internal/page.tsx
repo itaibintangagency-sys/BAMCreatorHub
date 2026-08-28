@@ -6,12 +6,12 @@ export default function LoginInternalPage() {
   const supabase = createClient();
 
   async function handleGoogleLogin() {
-    // Redirect ke CLIENT page /auth/callback (bukan /api/auth/callback)
-    // supaya exchange code terjadi di browser, bukan di server.
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        // Kembali ke server route — karena PKCE code_verifier
+        // disimpan di httpOnly cookie yang hanya bisa dibaca server
+        redirectTo: `${window.location.origin}/api/auth/callback`,
       },
     });
   }
