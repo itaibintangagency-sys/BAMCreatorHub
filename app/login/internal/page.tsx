@@ -6,10 +6,14 @@ export default function LoginInternalPage() {
   const supabase = createClient();
 
   async function handleGoogleLogin() {
+    // Pakai window.location.origin (domain saat ini di browser),
+    // BUKAN process.env.NEXT_PUBLIC_SITE_URL — supaya tidak pernah
+    // salah/kadaluarsa meski domain Vercel berubah-ubah, dan tidak
+    // ada risiko trailing slash atau env var lupa di-update.
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/api/auth/callback`,
+        redirectTo: `${window.location.origin}/api/auth/callback`,
       },
     });
   }
@@ -26,6 +30,7 @@ export default function LoginInternalPage() {
         </p>
 
         <button
+          type="button"
           onClick={handleGoogleLogin}
           className="w-full flex items-center justify-center gap-2 border border-line rounded-md py-3 text-sm font-medium hover:bg-gray-50"
         >
