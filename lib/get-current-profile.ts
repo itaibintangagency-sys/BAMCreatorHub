@@ -19,13 +19,13 @@ export type CurrentProfile =
   | {
       role: 'super_admin' | 'cm'
       id: string
-      nama: string
+      name: string
       email: string
     }
   | {
       role: 'creator'
       id: string
-      nama: string
+      name: string
       creator_code: string
       assigned_cm_id: string | null
     }
@@ -51,7 +51,7 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
     return {
       role: cmProfile.role as 'super_admin' | 'cm',
       id: cmProfile.id,
-      nama: cmProfile.nama,
+      name: cmProfile.nama,
       email: cmProfile.email,
     }
   }
@@ -67,7 +67,7 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
     return {
       role: 'creator',
       id: creator.id,
-      nama: creator.nama,
+      name: creator.nama,
       creator_code: creator.creator_code,
       assigned_cm_id: creator.assigned_cm_id,
     }
