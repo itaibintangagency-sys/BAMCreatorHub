@@ -38,6 +38,11 @@ export default async function TambahWebinarPage() {
             <Field label="Jam" name="event_time" placeholder="14:00 WIB" />
           </div>
           <Field label="Link registrasi" name="registration_link" placeholder="https://..." />
+          <Field
+            label="Segmentasi peserta (opsional)"
+            name="target_segment"
+            placeholder="Contoh: Semua Golden Tick tier Gold ke atas"
+          />
           <div>
             <label className="block text-xs font-medium mb-1.5">Deskripsi</label>
             <textarea

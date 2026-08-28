@@ -2,14 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/get-current-profile";
 import Topbar from "@/components/Topbar";
-import { tandaiHadir } from "./actions";
-
-const CATEGORY_COLOR: Record<string, string> = {
-  "Non SVTC": "#EE4D2D",
-  "Bintang Next Level": "#7C3AED",
-  "Golden Tick Acceleration": "#F59E0B",
-  "Golden Tick Shopee Pusat": "#059669",
-};
+import WebinarCalendar, { type WebinarItem, type WebinarMaterial } from "./WebinarCalendar";
 
 export default async function WebinarPage() {
   const profile = await getCurrentProfile();
@@ -17,26 +10,79 @@ export default async function WebinarPage() {
 
   const supabase = createClient();
   const isInternal = profile.role !== "creator";
+  const isCreator = profile.role === "creator";
 
-  const { data: webinars } = await supabase
+  // Ambil semua webinar (skala masih kecil — puluhan event/tahun,
+  // aman di-fetch sekaligus supaya navigasi bulan di kalender tidak
+  // perlu round-trip fetch ulang tiap ganti bulan)
+  const { data: webinarsRaw } = await supabase
     .from("webinars")
     .select("*")
-    .gte("event_date", new Date().toISOString().slice(0, 10))
     .order("event_date");
+
+  // Kalau Creator: ambil daftar webinar yang dia diundang (utk
+  // eligibility_type = 'Invite Only') + status kehadiran dia
+  let invitedWebinarIds = new Set<string>();
+  let attendedWebinarIds = new Set<string>();
+
+  if (isCreator) {
+    const [{ data: invites }, { data: attendance }] = await Promise.all([
+      supabase.from("webinar_invitees").select("webinar_id").eq("creator_id", profile.id),
+      supabase.from("webinar_attendance").select("webinar_id").eq("creator_id", profile.id),
+    ]);
+    invitedWebinarIds = new Set((invites ?? []).map((i) => i.webinar_id));
+    attendedWebinarIds = new Set((attendance ?? []).map((a) => a.webinar_id));
+  }
+
+  function computeEligible(w: { eligibility_type: string; id: string }): boolean {
+    if (isInternal) return true; // Super Admin & CM selalu bisa lihat semua
+    if (w.eligibility_type === "Eligible for All") return true;
+    if (w.eligibility_type === "Golden Tick Only") {
+      return isCreator && profile.role === "creator" ? profile.status_golden_tick : false;
+    }
+    if (w.eligibility_type === "Invite Only") {
+      return invitedWebinarIds.has(w.id);
+    }
+    return false;
+  }
+
+  const webinars: WebinarItem[] = (webinarsRaw ?? []).map((w) => ({
+    id: w.id,
+    title: w.title,
+    category: w.category,
+    event_date: w.event_date,
+    event_time: w.event_time,
+    eligibility_type: w.eligibility_type,
+    registration_link: w.registration_link,
+    recording_link: w.recording_link,
+    description: w.description,
+    target_segment: w.target_segment,
+    eligible: computeEligible(w),
+  }));
+
+  // Materi hanya perlu di-fetch untuk webinar yang MEMANG eligible
+  // (RLS webinar_materials sudah menolak baris yang tidak eligible,
+  // tapi kita filter dulu di query supaya tidak buang request untuk
+  // event yang pasti terkunci)
+  const eligibleIds = webinars.filter((w) => w.eligible).map((w) => w.id);
+
+  const materialsByWebinar: Record<string, WebinarMaterial[]> = {};
+  if (eligibleIds.length > 0) {
+    const { data: materials } = await supabase
+      .from("webinar_materials")
+      .select("id, webinar_id, title, file_url, material_type")
+      .in("webinar_id", eligibleIds);
+
+    for (const m of materials ?? []) {
+      (materialsByWebinar[m.webinar_id] ??= []).push(m);
+    }
+  }
 
   return (
     <>
       <Topbar title="Jadwal Webinar" profile={profile} />
       <div className="p-7">
-        <div className="flex justify-between items-center mb-5">
-          <div className="flex gap-4 flex-wrap">
-            {Object.entries(CATEGORY_COLOR).map(([label, color]) => (
-              <div key={label} className="flex items-center gap-1.5 text-xs text-ink-soft">
-                <span className="w-2 h-2 rounded-full" style={{ background: color }} />
-                {label}
-              </div>
-            ))}
-          </div>
+        <div className="flex justify-end mb-4">
           {isInternal && (
             <Link
               href="/webinar/tambah"
@@ -47,40 +93,12 @@ export default async function WebinarPage() {
           )}
         </div>
 
-        <div className="bg-white border border-line rounded-md">
-          {webinars?.map((w) => (
-            <div key={w.id} className="flex items-center gap-4 px-5 py-4 border-b border-line last:border-0">
-              <div className="w-16 text-center bg-orange-light rounded-md py-1.5 flex-shrink-0">
-                <div className="text-[10px] font-bold text-orange-dark">
-                  {new Date(w.event_date).toLocaleDateString("id-ID", { month: "short" }).toUpperCase()}
-                </div>
-                <div className="text-lg font-black text-orange-dark">
-                  {new Date(w.event_date).getDate()}
-                </div>
-              </div>
-              <div className="flex-1">
-                <div className="font-semibold text-[13.5px]">{w.title}</div>
-                <div className="text-[11.5px] text-ink-soft flex items-center gap-1.5 mt-0.5">
-                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: CATEGORY_COLOR[w.category] }} />
-                  {w.category} &middot; {w.event_time} &middot; {w.eligibility_type}
-                </div>
-              </div>
-              {profile.role === "creator" && (
-                <form action={tandaiHadir.bind(null, w.id)}>
-                  <button
-                    type="submit"
-                    className="border border-line text-xs font-medium px-3 py-1.5 rounded-md"
-                  >
-                    Saya hadir
-                  </button>
-                </form>
-              )}
-            </div>
-          ))}
-          {(!webinars || webinars.length === 0) && (
-            <div className="p-6 text-sm text-ink-soft">Belum ada jadwal webinar mendatang.</div>
-          )}
-        </div>
+        <WebinarCalendar
+          webinars={webinars}
+          materialsByWebinar={materialsByWebinar}
+          isCreator={isCreator}
+          attendedWebinarIds={attendedWebinarIds}
+        />
       </div>
     </>
   );

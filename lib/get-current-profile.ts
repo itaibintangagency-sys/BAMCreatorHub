@@ -29,6 +29,7 @@ export type CurrentProfile =
       name: string
       creator_code: string
       assigned_cm_id: string | null
+      status_golden_tick: boolean
     }
 
 export async function getCurrentProfile(): Promise<CurrentProfile | null> {
@@ -76,7 +77,7 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
   // 2. Baru fallback ke creators (Layer 2)
   const { data: creator, error: crError } = await supabase
     .from('creators')
-    .select('id, nama, creator_code, assigned_cm_id')
+    .select('id, nama, creator_code, assigned_cm_id, status_golden_tick')
     .eq('id', user.id)
     .maybeSingle()
 
@@ -89,6 +90,7 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
       name: creator.nama,
       creator_code: creator.creator_code,
       assigned_cm_id: creator.assigned_cm_id,
+      status_golden_tick: creator.status_golden_tick ?? false,
     }
   }
 
