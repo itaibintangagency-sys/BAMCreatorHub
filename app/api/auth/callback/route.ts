@@ -28,8 +28,8 @@ export async function GET(request: Request) {
           // Baca dari cookieStore — bisa akses httpOnly cookies termasuk PKCE code_verifier
           return cookieStore.getAll();
         },
-        setAll(cookies) {
-          cookiesToSet = cookies;
+        setAll(cookiesFromSupabase: { name: string; value: string; options: any }[]) {
+          cookiesToSet = cookiesFromSupabase;
         },
       },
     }
