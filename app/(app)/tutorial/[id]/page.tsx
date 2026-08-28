@@ -64,12 +64,34 @@ export default async function TutorialDetailPage({ params }: { params: { id: str
   const activeMaterial = (materials ?? []).find((m) => !doneIds.has(m.id)) ?? materials?.[0];
   const embedUrl = activeMaterial?.content_url ? getEmbedUrl(activeMaterial.content_url) : null;
 
+  // Tutorial lain di kategori yang sama, untuk section "Tutorial Lain
+  // di Kategori Ini" — maksimal 4, urutkan paling baru diperbarui dulu
+  const { data: relatedTutorials } = await supabase
+    .from("tutorials")
+    .select("id, title, level")
+    .eq("category", tutorial.category)
+    .neq("id", tutorial.id)
+    .order("last_updated", { ascending: false })
+    .limit(4);
+
   return (
     <>
       <Topbar title={tutorial.title} profile={profile} />
       <div className="p-7 grid grid-cols-[1fr_320px] gap-6 items-start">
         <div className="space-y-4">
           <div>
+            <div className="text-[12px] text-ink-soft mb-2">
+              <Link href="/tutorial" className="hover:text-orange-dark hover:underline">
+                Tutorial
+              </Link>
+              {" / "}
+              <Link
+                href={`/tutorial?category=${encodeURIComponent(tutorial.category)}`}
+                className="hover:text-orange-dark hover:underline"
+              >
+                {tutorial.category}
+              </Link>
+            </div>
             <div className="flex gap-1.5 mb-2 flex-wrap items-center">
               <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-orange-light text-orange-dark">
                 {tutorial.category}
@@ -120,6 +142,24 @@ export default async function TutorialDetailPage({ params }: { params: { id: str
               <div className="text-[11.5px] text-green-700 font-medium mb-0.5">Tutorial selesai!</div>
               <div className="text-[13.5px] font-semibold">Lanjut ke: {nextTutorial.title} &rarr;</div>
             </Link>
+          )}
+
+          {relatedTutorials && relatedTutorials.length > 0 && (
+            <div>
+              <h3 className="text-[13.5px] font-bold mb-2.5">Tutorial Lain di Kategori Ini</h3>
+              <div className="grid grid-cols-2 gap-2.5">
+                {relatedTutorials.map((rt) => (
+                  <Link
+                    key={rt.id}
+                    href={`/tutorial/${rt.id}`}
+                    className="bg-white border border-line rounded-md p-3 hover:bg-gray-50"
+                  >
+                    <div className="text-[12.5px] font-semibold mb-1">{rt.title}</div>
+                    {rt.level && <span className="text-[10.5px] text-ink-soft">{rt.level}</span>}
+                  </Link>
+                ))}
+              </div>
+            </div>
           )}
         </div>
 

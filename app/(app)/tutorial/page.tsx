@@ -4,7 +4,11 @@ import { getCurrentProfile } from "@/lib/get-current-profile";
 import Topbar from "@/components/Topbar";
 import TutorialLibrary, { type TutorialItem } from "./TutorialLibrary";
 
-export default async function TutorialPage() {
+export default async function TutorialPage({
+  searchParams,
+}: {
+  searchParams: { category?: string };
+}) {
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
@@ -82,7 +86,12 @@ export default async function TutorialPage() {
           )}
         </div>
 
-        <TutorialLibrary tutorials={tutorials} categories={categories ?? []} isCreator={isCreator} />
+        <TutorialLibrary
+          tutorials={tutorials}
+          categories={categories ?? []}
+          isCreator={isCreator}
+          initialCategory={searchParams.category ?? null}
+        />
       </div>
     </>
   );

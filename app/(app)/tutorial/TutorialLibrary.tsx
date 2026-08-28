@@ -34,13 +34,15 @@ export default function TutorialLibrary({
   tutorials,
   categories,
   isCreator,
+  initialCategory = null,
 }: {
   tutorials: TutorialItem[];
   categories: Category[];
   isCreator: boolean;
+  initialCategory?: string | null;
 }) {
   const [search, setSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [activeCategory, setActiveCategory] = useState<string | null>(initialCategory);
 
   const onboardingList = useMemo(
     () =>
@@ -63,6 +65,8 @@ export default function TutorialLibrary({
   }, [onboardingList, isCreator]);
 
   const doneCount = onboardingList.filter((t) => t.status === "selesai").length;
+  const progressPercent =
+    onboardingList.length > 0 ? Math.round((doneCount / onboardingList.length) * 100) : 0;
 
   const searchLower = search.trim().toLowerCase();
   const filtered = tutorials.filter((t) => {
@@ -81,7 +85,7 @@ export default function TutorialLibrary({
       {/* Onboarding path */}
       {onboardingList.length > 0 && (
         <div>
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center justify-between mb-2">
             <h2 className="text-[15.5px] font-bold">Onboarding path wajib</h2>
             {isCreator && (
               <span className="text-[11.5px] text-ink-soft">
@@ -89,6 +93,14 @@ export default function TutorialLibrary({
               </span>
             )}
           </div>
+          {isCreator && (
+            <div className="w-full h-1.5 bg-gray-100 rounded-full mb-3.5 overflow-hidden">
+              <div
+                className="h-full bg-orange rounded-full transition-all"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+          )}
           <div className="flex gap-3 overflow-x-auto pb-1">
             {onboardingList.map((t, i) => {
               const locked = lockedMap[t.id];
