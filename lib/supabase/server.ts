@@ -10,22 +10,17 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
+        getAll() {
+          return cookieStore.getAll();
         },
-        set(name: string, value: string, options: any) {
+        setAll(cookiesToSet) {
           try {
-            cookieStore.set({ name, value, ...options });
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            );
           } catch {
-            // Dipanggil dari Server Component (bukan Server Action) — aman diabaikan,
-            // sesi tetap ter-refresh lewat middleware.
-          }
-        },
-        remove(name: string, options: any) {
-          try {
-            cookieStore.set({ name, value: "", ...options });
-          } catch {
-            // sama seperti di atas
+            // Dipanggil dari Server Component (bukan Server Action/Route Handler) —
+            // aman diabaikan, sesi tetap ter-refresh lewat middleware.
           }
         },
       },
