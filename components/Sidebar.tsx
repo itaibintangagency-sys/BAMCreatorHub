@@ -27,6 +27,9 @@ export default function Sidebar({ profile }: { profile: CurrentProfile }) {
             Manajemen
           </div>
           <NavLink href="/dashboard" label="Creator Saya" />
+          {profile.role === "super_admin" && (
+            <NavLink href="/admin/users" label="Kelola Akun Internal" />
+          )}
         </>
       )}
     </aside>
