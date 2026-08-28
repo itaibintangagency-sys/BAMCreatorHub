@@ -1,14 +1,13 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
+import { createClient, createServiceRoleClient } from "@/lib/supabase/server";
 
 // ============================================================
 // Callback OAuth Layer 1 (Super Admin & CM)
 // ============================================================
-// Pola cookies di sini SENGAJA dibuat identik dengan
-// lib/supabase/server.ts (get/set/remove), bukan getAll/setAll,
-// supaya konsisten dengan versi @supabase/ssr yang terpasang di
-// project ini dan sesi benar-benar tersimpan untuk middleware.
+// SENGAJA dibuat sesederhana mungkin — pakai createClient() yang
+// SAMA PERSIS dipakai di seluruh bagian lain aplikasi (termasuk
+// creator-login yang sudah terbukti berfungsi). Tidak ada lagi
+// object cookies/response custom.
 // ============================================================
 
 export async function GET(request: Request) {
@@ -20,30 +19,12 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login/internal?error=missing_code`);
   }
 
-  const cookieStore = cookies();
-  const response = NextResponse.redirect(`${origin}${next}`);
+  const supabase = createClient();
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-        set(name: string, value: string, options: any) {
-          // Tulis ke response yang akan dikembalikan, BUKAN cookieStore
-          // langsung — supaya Set-Cookie pasti menempel di redirect ini.
-          response.cookies.set({ name, value, ...options });
-        },
-        remove(name: string, options: any) {
-          response.cookies.set({ name, value: "", ...options });
-        },
-      },
-    }
-  );
-
-  // 1. Tukar code OAuth jadi session (ini yang men-trigger set() di atas)
+  // 1. Tukar code OAuth jadi session.
+  //    createClient() di atas otomatis menulis cookie sesi lewat
+  //    cookies().set() dari next/headers — persis seperti yang
+  //    dipakai creator-login/route.ts.
   const { data: sessionData, error: exchangeError } =
     await supabase.auth.exchangeCodeForSession(code);
 
@@ -59,10 +40,8 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login/internal?error=no_email`);
   }
 
-  // 2. Cek apakah email ini terdaftar di cm_profiles.
-  //    Pakai service role supaya bisa baca baris 'invited' yang
-  //    id-nya masih NULL (RLS "own profile" belum berlaku untuk itu).
-  const { createServiceRoleClient } = await import("@/lib/supabase/server");
+  // 2. Cek apakah email ini terdaftar di cm_profiles (pakai service
+  //    role supaya bisa baca baris 'invited' yang id-nya masih NULL)
   const supabaseAdmin = createServiceRoleClient();
 
   const { data: profile, error: profileError } = await supabaseAdmin
@@ -93,6 +72,5 @@ export async function GET(request: Request) {
     }
   }
 
-  // Session cookies sudah menempel di `response` lewat set() di atas.
-  return response;
+  return NextResponse.redirect(`${origin}${next}`);
 }
