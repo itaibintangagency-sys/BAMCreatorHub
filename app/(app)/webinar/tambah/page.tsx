@@ -13,13 +13,21 @@ export default async function TambahWebinarPage() {
 
   const [{ data: categories }, { data: creators }] = await Promise.all([
     supabase.from("webinar_categories").select("name, color").order("sort_order"),
-    supabase.from("creators").select("id, nama, creator_code").order("nama"),
+    supabase
+      .from("creators")
+      .select("id, nama, creator_code, assigned_cm_id, status_golden_tick")
+      .order("nama"),
   ]);
 
   return (
     <>
       <Topbar title="Tambah Webinar" profile={profile} />
-      <WebinarForm categories={categories ?? []} creators={creators ?? []} />
+      <WebinarForm
+        categories={categories ?? []}
+        creators={creators ?? []}
+        currentUserId={profile.id}
+        currentUserRole={profile.role}
+      />
     </>
   );
 }
