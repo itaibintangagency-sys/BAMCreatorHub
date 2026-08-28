@@ -1,7 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login/internal", "/login/creator", "/api/auth"];
+// Tambahkan /auth/callback ke public paths supaya halaman
+// callback client-side bisa diakses tanpa login
+const PUBLIC_PATHS = ["/login/internal", "/login/creator", "/api/auth", "/auth/callback"];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request: { headers: request.headers } });
