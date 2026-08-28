@@ -2,75 +2,88 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getCurrentProfile } from "@/lib/get-current-profile";
 import Topbar from "@/components/Topbar";
+import TutorialLibrary, { type TutorialItem } from "./TutorialLibrary";
 
 export default async function TutorialPage() {
   const profile = await getCurrentProfile();
   if (!profile) return null;
 
   const supabase = createClient();
-  const { data: onboarding } = await supabase
-    .from("tutorials")
-    .select("*")
-    .eq("is_onboarding_required", true)
-    .order("order_in_path");
+  const isInternal = profile.role !== "creator";
+  const isCreator = profile.role === "creator";
 
-  const { data: tutorials } = await supabase
-    .from("tutorials")
-    .select("*")
-    .order("last_updated", { ascending: false });
+  const [{ data: tutorialsRaw }, { data: categories }, { data: allMaterials }] = await Promise.all([
+    supabase.from("tutorials").select("*").order("last_updated", { ascending: false }),
+    supabase.from("tutorial_categories").select("name, color").order("sort_order"),
+    supabase.from("tutorial_materials").select("id, tutorial_id"),
+  ]);
+
+  // Hitung jumlah materi per tutorial (utk status belum/sedang/selesai)
+  const materialCountByTutorial: Record<string, number> = {};
+  for (const m of allMaterials ?? []) {
+    materialCountByTutorial[m.tutorial_id] = (materialCountByTutorial[m.tutorial_id] ?? 0) + 1;
+  }
+
+  let doneCountByTutorial: Record<string, number> = {};
+  if (isCreator) {
+    const materialIds = (allMaterials ?? []).map((m) => m.id);
+    if (materialIds.length > 0) {
+      const { data: progress } = await supabase
+        .from("tutorial_progress")
+        .select("material_id, status")
+        .eq("creator_id", profile.id)
+        .eq("status", "selesai")
+        .in("material_id", materialIds);
+
+      const materialToTutorial: Record<string, string> = {};
+      for (const m of allMaterials ?? []) materialToTutorial[m.id] = m.tutorial_id;
+
+      for (const p of progress ?? []) {
+        const tid = materialToTutorial[p.material_id];
+        if (tid) doneCountByTutorial[tid] = (doneCountByTutorial[tid] ?? 0) + 1;
+      }
+    }
+  }
+
+  function computeStatus(tutorialId: string): TutorialItem["status"] {
+    const total = materialCountByTutorial[tutorialId] ?? 0;
+    if (total === 0) return "tanpa_materi";
+    if (!isCreator) return "tanpa_materi"; // internal tidak punya progress personal
+    const done = doneCountByTutorial[tutorialId] ?? 0;
+    if (done === 0) return "belum";
+    if (done < total) return "sedang";
+    return "selesai";
+  }
+
+  const tutorials: TutorialItem[] = (tutorialsRaw ?? []).map((t) => ({
+    id: t.id,
+    title: t.title,
+    category: t.category,
+    level: t.level,
+    description: t.description,
+    is_onboarding_required: t.is_onboarding_required,
+    order_in_path: t.order_in_path,
+    last_updated: t.last_updated,
+    status: computeStatus(t.id),
+  }));
 
   return (
     <>
       <Topbar title="Tutorial" profile={profile} />
       <div className="p-7">
-        {onboarding && onboarding.length > 0 && (
-          <>
-            <h2 className="text-[15.5px] font-bold mb-3.5">Onboarding path wajib</h2>
-            <div className="flex gap-3 mb-8 overflow-x-auto">
-              {onboarding.map((t, i) => (
-                <div key={t.id} className="bg-white border border-line rounded-md p-3.5 min-w-[190px]">
-                  <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold mb-2">
-                    {i + 1}
-                  </div>
-                  <div className="text-[12.5px] font-semibold">{t.title}</div>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-
-        <h2 className="text-[15.5px] font-bold mb-3.5">Semua tutorial</h2>
-        <div className="grid grid-cols-3 gap-4">
-          {tutorials?.map((t) => (
+        <div className="flex justify-end mb-4">
+          {isInternal && (
             <Link
-              key={t.id}
-              href={`/tutorial/${t.id}`}
-              className="bg-white border border-line rounded-md overflow-hidden block"
+              href="/tutorial/tambah"
+              className="bg-orange text-white text-[13.5px] font-medium px-4 py-2 rounded-md whitespace-nowrap"
             >
-              <div className="h-24 bg-orange-lighter" />
-              <div className="p-3.5">
-                <div className="flex gap-1.5 mb-2">
-                  <Badge>{t.category}</Badge>
-                  <Badge muted>{t.level}</Badge>
-                </div>
-                <div className="text-[13.5px] font-semibold">{t.title}</div>
-              </div>
+              + Tambah Tutorial
             </Link>
-          ))}
+          )}
         </div>
+
+        <TutorialLibrary tutorials={tutorials} categories={categories ?? []} isCreator={isCreator} />
       </div>
     </>
-  );
-}
-
-function Badge({ children, muted }: { children: React.ReactNode; muted?: boolean }) {
-  return (
-    <span
-      className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-        muted ? "bg-gray-100 text-ink-soft" : "bg-orange-light text-orange-dark"
-      }`}
-    >
-      {children}
-    </span>
   );
 }
