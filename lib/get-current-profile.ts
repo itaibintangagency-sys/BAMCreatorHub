@@ -37,15 +37,30 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) return null
+  if (!user) {
+    console.log('[getCurrentProfile] user null dari auth.getUser()')
+    return null
+  }
 
   // 1. Cek cm_profiles DULU (Layer 1: Super Admin & CM)
-  const { data: cmProfile } = await supabase
+  const { data: cmProfile, error: cmError, status: cmStatus } = await supabase
     .from('cm_profiles')
     .select('id, nama, email, role, status')
     .eq('id', user.id)
     .eq('status', 'active')
     .maybeSingle()
+
+  console.log(
+    '[getCurrentProfile] user.id=',
+    user.id,
+    'cmProfile=',
+    cmProfile,
+    'cmError=',
+    cmError?.message,
+    cmError?.code,
+    'httpStatus=',
+    cmStatus
+  )
 
   if (cmProfile) {
     return {
@@ -57,11 +72,13 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
   }
 
   // 2. Baru fallback ke creators (Layer 2)
-  const { data: creator } = await supabase
+  const { data: creator, error: crError } = await supabase
     .from('creators')
     .select('id, nama, creator_code, assigned_cm_id')
     .eq('id', user.id)
     .maybeSingle()
+
+  console.log('[getCurrentProfile] creator=', creator, 'crError=', crError?.message)
 
   if (creator) {
     return {
@@ -74,5 +91,6 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
   }
 
   // 3. Tidak ditemukan di keduanya -> bukan user yang valid
+  console.log('[getCurrentProfile] tidak ketemu di cm_profiles maupun creators -> return null')
   return null
 }
