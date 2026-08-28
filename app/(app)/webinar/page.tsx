@@ -82,6 +82,16 @@ export default async function WebinarPage() {
     }
   }
 
+  const { data: categoriesRaw } = await supabase
+    .from("webinar_categories")
+    .select("name, color")
+    .order("sort_order");
+
+  const categoryColors: Record<string, string> = {};
+  for (const c of categoriesRaw ?? []) {
+    categoryColors[c.name] = c.color;
+  }
+
   return (
     <>
       <Topbar title="Jadwal Webinar" profile={profile} />
@@ -102,6 +112,7 @@ export default async function WebinarPage() {
           materialsByWebinar={materialsByWebinar}
           isCreator={isCreator}
           attendedWebinarIds={attendedWebinarIds}
+          categoryColors={categoryColors}
         />
       </div>
     </>

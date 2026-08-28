@@ -3,13 +3,6 @@
 import { useMemo, useState } from "react";
 import { tandaiHadir } from "./actions";
 
-const CATEGORY_COLOR: Record<string, string> = {
-  "Non SVTC": "#EE4D2D",
-  "Bintang Next Level": "#7C3AED",
-  "Golden Tick Acceleration": "#F59E0B",
-  "Golden Tick Shopee Pusat": "#059669",
-};
-
 const HARI = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 const BULAN = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -43,12 +36,15 @@ export default function WebinarCalendar({
   materialsByWebinar,
   isCreator,
   attendedWebinarIds,
+  categoryColors,
 }: {
   webinars: WebinarItem[];
   materialsByWebinar: Record<string, WebinarMaterial[]>;
   isCreator: boolean;
   attendedWebinarIds: Set<string>;
+  categoryColors: Record<string, string>;
 }) {
+  const CATEGORY_COLOR = categoryColors;
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth()); // 0-11
@@ -190,6 +186,7 @@ export default function WebinarCalendar({
           isCreator={isCreator}
           alreadyAttended={attendedWebinarIds.has(selectedWebinar.id)}
           canSelfReport={selectedWebinar.event_date <= todayStr}
+          categoryColors={categoryColors}
           onClose={() => setSelectedWebinar(null)}
         />
       )}
@@ -203,6 +200,7 @@ function WebinarModal({
   isCreator,
   alreadyAttended,
   canSelfReport,
+  categoryColors,
   onClose,
 }: {
   webinar: WebinarItem;
@@ -210,6 +208,7 @@ function WebinarModal({
   isCreator: boolean;
   alreadyAttended: boolean;
   canSelfReport: boolean;
+  categoryColors: Record<string, string>;
   onClose: () => void;
 }) {
   const locked = !webinar.eligible;
@@ -226,7 +225,7 @@ function WebinarModal({
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-1.5 text-[11px] text-ink-soft mb-1">
-              <span className="w-2 h-2 rounded-full" style={{ background: CATEGORY_COLOR[webinar.category] }} />
+              <span className="w-2 h-2 rounded-full" style={{ background: categoryColors[webinar.category] ?? "#999" }} />
               {webinar.category}
             </div>
             <h3 className="font-bold text-[16px]">{webinar.title}</h3>
