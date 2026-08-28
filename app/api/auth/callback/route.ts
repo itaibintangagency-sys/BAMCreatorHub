@@ -12,8 +12,9 @@ export async function GET(request: Request) {
 
   const cookieStore = cookies();
 
-  // Kumpulkan semua cookie yang Supabase ingin set
-  const cookiesToSet: string[] = [];
+  // Kumpulkan semua cookie yang Supabase ingin set — JANGAN tulis
+  // ke cookieStore langsung, kumpulkan dulu untuk ditaruh di response.
+  const cookiesToSet: { name: string; value: string; options: any }[] = [];
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -21,63 +22,55 @@ export async function GET(request: Request) {
     {
       cookies: {
         get(name: string) {
+          // BACA dari cookieStore — ini bisa akses httpOnly cookies
+          // termasuk PKCE code_verifier
           return cookieStore.get(name)?.value;
         },
         set(name: string, value: string, options: any) {
-          // Simpan ke cookieStore (untuk implicit response)
-          cookieStore.set({ name, value, ...options });
-          // JUGA kumpulkan sebagai raw Set-Cookie header string
-          const parts = [`${name}=${encodeURIComponent(value)}`];
-          if (options.path) parts.push(`Path=${options.path}`);
-          if (options.maxAge) parts.push(`Max-Age=${options.maxAge}`);
-          if (options.domain) parts.push(`Domain=${options.domain}`);
-          if (options.secure) parts.push("Secure");
-          if (options.httpOnly) parts.push("HttpOnly");
-          if (options.sameSite) parts.push(`SameSite=${options.sameSite}`);
-          cookiesToSet.push(parts.join("; "));
+          // KUMPULKAN, jangan langsung tulis
+          cookiesToSet.push({ name, value, options });
         },
         remove(name: string, options: any) {
-          cookieStore.set({ name, value: "", ...options });
-          const parts = [`${name}=`, "Max-Age=0"];
-          if (options.path) parts.push(`Path=${options.path}`);
-          cookiesToSet.push(parts.join("; "));
+          cookiesToSet.push({ name, value: "", options: { ...options, maxAge: 0 } });
         },
       },
     }
   );
 
-  // Exchange code → session
+  // Exchange code di SERVER (hanya server bisa baca PKCE code_verifier)
   const { error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
-    return NextResponse.redirect(`${origin}/login/internal?error=exchange_failed`);
+    return NextResponse.redirect(
+      `${origin}/login/internal?error=exchange_failed&detail=${encodeURIComponent(error.message)}`
+    );
   }
 
-  // =================================================================
-  // KUNCI PERBAIKAN: Jangan pakai NextResponse.redirect()
-  // Kirim halaman HTML biasa (200) dengan Set-Cookie header EKSPLISIT.
+  // ================================================================
+  // KUNCI: Kembalikan HTML 200 (BUKAN redirect 307).
   // Browser PASTI memproses Set-Cookie pada response 200.
-  // Lalu <meta http-equiv="refresh"> redirect ke /dashboard SETELAH
-  // cookie tersimpan.
-  // =================================================================
-  const html = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta http-equiv="refresh" content="0;url=${origin}/dashboard" />
-      </head>
-      <body>
-        <p>Logging in...</p>
-      </body>
-    </html>
-  `;
+  // Setelah cookie tersimpan, JavaScript redirect ke /dashboard.
+  // ================================================================
+  const html = `<!DOCTYPE html>
+<html>
+<head><title>Logging in...</title></head>
+<body>
+  <p>Logging in...</p>
+  <script>window.location.replace("/dashboard");</script>
+</body>
+</html>`;
 
-  const headers = new Headers();
-  headers.set("Content-Type", "text/html; charset=utf-8");
-  // Pasang setiap cookie sebagai Set-Cookie header terpisah
-  for (const cookie of cookiesToSet) {
-    headers.append("Set-Cookie", cookie);
+  const response = new NextResponse(html, {
+    status: 200,
+    headers: { "Content-Type": "text/html; charset=utf-8" },
+  });
+
+  // Taruh SEMUA cookie yang dikumpulkan ke response object ini.
+  // Karena response-nya 200 (bukan redirect), browser PASTI
+  // memproses Set-Cookie headers sebelum menjalankan JavaScript.
+  for (const { name, value, options } of cookiesToSet) {
+    response.cookies.set({ name, value, ...options });
   }
 
-  return new NextResponse(html, { status: 200, headers });
+  return response;
 }
