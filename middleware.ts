@@ -1,9 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Tambahkan /auth/callback ke public paths supaya halaman
-// callback client-side bisa diakses tanpa login
-const PUBLIC_PATHS = ["/login/internal", "/login/creator", "/api/auth", "/auth/callback"];
+const PUBLIC_PATHS = ["/login/internal", "/login/creator", "/api/auth"];
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -32,6 +30,12 @@ export async function middleware(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
+  console.log(
+    `[middleware] path=${path} user=${user ? user.id : "null"} cookies=${request.cookies
+      .getAll()
+      .map((c) => c.name)
+      .join(",")}`
+  );
   const isPublic = PUBLIC_PATHS.some((p) => path.startsWith(p));
 
   if (!user && !isPublic && path !== "/") {
