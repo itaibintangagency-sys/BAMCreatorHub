@@ -2,7 +2,7 @@
 
 Codebase Next.js lengkap untuk platform manajemen creator Shopee Affiliate — modul Produk, Tutorial, dan Jadwal Webinar, dengan auth 2-layer (OAuth internal + ID/Password Creator) dan Row Level Security 3-role.
 
-Ini codebase siap-deploy, tapi **belum tersambung ke infrastruktur apa pun** — kamu perlu isi kredensial milikmu sendiri di langkah 2–4 di bawah.
+Ini codebase siap-deploy, tapi **belum tersambung ke infrastruktur apa pun** — kamu perlu isi kredensial milikmu sendiri di langkah 2–4 di bawah. 
 
 ## 1. Install dependency
 
