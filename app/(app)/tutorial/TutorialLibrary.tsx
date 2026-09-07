@@ -13,6 +13,7 @@ export type TutorialItem = {
   order_in_path: number | null;
   last_updated: string;
   status: "belum" | "sedang" | "selesai" | "tanpa_materi";
+  thumbnail_url: string | null;
 };
 
 type Category = { name: string; color: string };
@@ -180,7 +181,8 @@ export default function TutorialLibrary({
               href={`/tutorial/${t.id}`}
               className="bg-white border border-line rounded-md overflow-hidden block hover:shadow-sm transition-shadow"
             >
-              <div className="h-24 bg-orange-lighter relative">
+              <div className="h-24 bg-orange-lighter relative overflow-hidden">
+                <CardThumbnail url={t.thumbnail_url} />
                 {isRecentlyUpdated(t.last_updated) && (
                   <span className="absolute top-2 right-2 bg-white text-[10px] font-bold px-2 py-0.5 rounded-full text-orange-dark shadow-sm">
                     Baru diperbarui
@@ -222,6 +224,21 @@ export default function TutorialLibrary({
         </div>
       </div>
     </div>
+  );
+}
+
+function CardThumbnail({ url }: { url: string | null }) {
+  const [failed, setFailed] = useState(false);
+  if (!url || failed) return null;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={url}
+      alt=""
+      className="w-full h-full object-cover"
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
   );
 }
 

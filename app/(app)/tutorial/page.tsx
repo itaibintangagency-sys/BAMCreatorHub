@@ -19,8 +19,29 @@ export default async function TutorialPage({
   const [{ data: tutorialsRaw }, { data: categories }, { data: allMaterials }] = await Promise.all([
     supabase.from("tutorials").select("*").order("last_updated", { ascending: false }),
     supabase.from("tutorial_categories").select("name, color").order("sort_order"),
-    supabase.from("tutorial_materials").select("id, tutorial_id"),
+    supabase.from("tutorial_materials").select("id, tutorial_id, type, content_url, order_index"),
   ]);
+
+  // Thumbnail: ambil dari materi bertipe "video" PERTAMA (berdasarkan
+  // order_index) di tiap tutorial, kalau link-nya Google Drive. Tidak
+  // butuh kolom/upload gambar terpisah — thumbnail-nya dari Drive langsung.
+  function extractDriveThumbnail(url: string | null): string | null {
+    if (!url) return null;
+    const match = url.match(/drive\.google\.com\/file\/d\/([^/]+)/);
+    if (!match) return null;
+    return `https://drive.google.com/thumbnail?id=${match[1]}&sz=w400`;
+  }
+
+  const materialsByTutorial: Record<string, typeof allMaterials> = {};
+  for (const m of allMaterials ?? []) {
+    (materialsByTutorial[m.tutorial_id] ??= []).push(m);
+  }
+  const thumbnailByTutorial: Record<string, string | null> = {};
+  for (const [tid, mats] of Object.entries(materialsByTutorial)) {
+    const sorted = [...(mats ?? [])].sort((a, b) => a.order_index - b.order_index);
+    const firstVideo = sorted.find((m) => m.type === "video");
+    thumbnailByTutorial[tid] = firstVideo ? extractDriveThumbnail(firstVideo.content_url) : null;
+  }
 
   // Hitung jumlah materi per tutorial (utk status belum/sedang/selesai)
   const materialCountByTutorial: Record<string, number> = {};
@@ -69,6 +90,7 @@ export default async function TutorialPage({
     order_in_path: t.order_in_path,
     last_updated: t.last_updated,
     status: computeStatus(t.id),
+    thumbnail_url: thumbnailByTutorial[t.id] ?? null,
   }));
 
   return (
