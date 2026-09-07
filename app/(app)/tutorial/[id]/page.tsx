@@ -109,6 +109,14 @@ export default async function TutorialDetailPage({ params }: { params: { id: str
             </div>
             <h2 className="text-xl font-extrabold mb-2">{tutorial.title}</h2>
             <p className="text-[13.5px] leading-7 text-ink-soft">{tutorial.description}</p>
+            {profile.role !== "creator" && (
+              <Link
+                href={`/tutorial/${tutorial.id}/edit`}
+                className="inline-block mt-2 text-[12px] font-medium text-orange-dark hover:underline"
+              >
+                Edit tutorial &amp; link materi &rarr;
+              </Link>
+            )}
           </div>
 
           {/* Preview materi aktif */}
