@@ -18,9 +18,9 @@ export default async function DashboardPage() {
     return (
       <>
         <Topbar title="Dashboard" profile={profile} />
-        <div className="p-7">
+        <div className="p-4 md:p-7">
           <h2 className="text-[15.5px] font-bold mb-3.5">Rekomendasi produk hari ini</h2>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {products?.map((p) => (
               <div key={p.id} className="border border-line rounded-md p-3 bg-white">
                 <div className="font-medium text-sm">{p.product_name}</div>
@@ -43,8 +43,8 @@ export default async function DashboardPage() {
   return (
     <>
       <Topbar title="Dashboard" profile={profile} />
-      <div className="p-7">
-        <div className="grid grid-cols-3 gap-3.5 mb-6">
+      <div className="p-4 md:p-7">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mb-6">
           <StatCard label={profile.role === "cm" ? "Creator Saya" : "Total Creator"} value={creators?.length ?? 0} />
           <StatCard label="Produk Aktif" value="—" />
           <StatCard label="Webinar Bulan Ini" value="—" />
@@ -54,6 +54,7 @@ export default async function DashboardPage() {
           <h2 className="text-[15.5px] font-bold px-5 pt-4 pb-2">
             {profile.role === "cm" ? "Creator binaan saya" : "Semua Creator"}
           </h2>
+          <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="text-[11.5px] text-gray-400 uppercase">
@@ -68,6 +69,7 @@ export default async function DashboardPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </div>
       </div>
     </>

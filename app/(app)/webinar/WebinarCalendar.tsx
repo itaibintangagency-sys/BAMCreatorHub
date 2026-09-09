@@ -111,7 +111,7 @@ export default function WebinarCalendar({
 
         <div className="grid grid-cols-7">
           {grid.map((cell, i) => {
-            if (!cell) return <div key={i} className="h-20 border-b border-r border-line bg-gray-50/40" />;
+            if (!cell) return <div key={i} className="h-14 sm:h-20 border-b border-r border-line bg-gray-50/40" />;
             const dateStr = cell.toISOString().slice(0, 10);
             const dayWebinars = webinarsByDate[dateStr] ?? [];
             const isToday = dateStr === todayStr;
@@ -121,7 +121,7 @@ export default function WebinarCalendar({
               <button
                 key={i}
                 onClick={() => setSelectedDate(dateStr === selectedDate ? null : dateStr)}
-                className={`h-20 border-b border-r border-line p-1.5 text-left align-top hover:bg-orange-lighter/40 transition-colors ${
+                className={`h-14 sm:h-20 border-b border-r border-line p-1 sm:p-1.5 text-left align-top hover:bg-orange-lighter/40 transition-colors ${
                   isSelected ? "bg-orange-lighter/60" : ""
                 }`}
               >
@@ -219,7 +219,7 @@ function WebinarModal({
       onClick={onClose}
     >
       <div
-        className="bg-white rounded-lg max-w-md w-full p-6 space-y-4"
+        className="bg-white rounded-lg max-w-md w-full p-5 sm:p-6 space-y-4 max-h-[85vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3">

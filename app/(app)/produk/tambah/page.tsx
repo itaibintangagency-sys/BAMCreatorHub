@@ -11,7 +11,7 @@ export default async function TambahProdukPage() {
   return (
     <>
       <Topbar title="Tambah Produk" profile={profile} />
-      <form action={tambahProduk} className="p-7 max-w-xl">
+      <form action={tambahProduk} className="p-4 md:p-7 max-w-xl">
         <div className="bg-white border border-line rounded-md p-6 space-y-4">
           <Field label="Nama produk" name="product_name" required />
           <Field
@@ -20,11 +20,11 @@ export default async function TambahProdukPage() {
             placeholder="https://s.shopee.co.id/..."
             required
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Harga produk" name="price_range" placeholder="Rp89.000~Rp120.000" />
             <Field label="Komisi affiliate" name="commission_rate" placeholder="12%" />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field label="Kategori" name="category" />
             <Field label="Kadaluarsa campaign" name="campaign_deadline" type="date" />
           </div>

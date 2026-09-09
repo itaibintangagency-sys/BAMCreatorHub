@@ -75,11 +75,11 @@ export default function WebinarForm({
   }
 
   return (
-    <form action={tambahWebinar} className="p-7 max-w-xl">
+    <form action={tambahWebinar} className="p-4 md:p-7 max-w-xl">
       <div className="bg-white border border-line rounded-md p-6 space-y-4">
         <Field label="Judul webinar" name="title" required />
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-medium mb-1.5">Kategori</label>
             <select
@@ -151,7 +151,7 @@ export default function WebinarForm({
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="Tanggal" name="event_date" type="date" required />
           <Field label="Jam" name="event_time" placeholder="14:00 WIB" />
         </div>

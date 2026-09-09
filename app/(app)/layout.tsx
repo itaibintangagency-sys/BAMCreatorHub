@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getCurrentProfile } from "@/lib/get-current-profile";
 import Sidebar from "@/components/Sidebar";
+import { SidebarProvider } from "@/components/SidebarContext";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const profile = await getCurrentProfile();
@@ -10,9 +11,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar profile={profile} />
-      <div className="ml-56 flex-1 min-w-0">{children}</div>
-    </div>
+    <SidebarProvider>
+      <div className="flex min-h-screen">
+        <Sidebar profile={profile} />
+        <div className="flex-1 min-w-0 md:ml-56">{children}</div>
+      </div>
+    </SidebarProvider>
   );
 }

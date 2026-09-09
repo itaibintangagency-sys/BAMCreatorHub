@@ -91,7 +91,7 @@ export default function UserManagement({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold">Kelola Akun Internal</h1>
           <p className="text-xs text-gray-500 mt-1">
@@ -176,7 +176,8 @@ export default function UserManagement({
         </form>
       )}
 
-      <table className="w-full text-left text-sm">
+      <div className="overflow-x-auto -mx-4 px-4 sm:mx-0 sm:px-0">
+      <table className="w-full text-left text-sm min-w-[640px]">
         <thead>
           <tr className="border-b text-gray-500">
             <th className="py-2">Nama</th>
@@ -277,6 +278,7 @@ export default function UserManagement({
           )}
         </tbody>
       </table>
+      </div>
     </div>
   )
 }

@@ -77,7 +77,7 @@ export default async function TutorialDetailPage({ params }: { params: { id: str
   return (
     <>
       <Topbar title={tutorial.title} profile={profile} />
-      <div className="p-7 grid grid-cols-[1fr_320px] gap-6 items-start">
+      <div className="p-4 md:p-7 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-6 items-start">
         <div className="space-y-4">
           <div>
             <div className="text-[12px] text-ink-soft mb-2">
@@ -155,7 +155,7 @@ export default async function TutorialDetailPage({ params }: { params: { id: str
           {relatedTutorials && relatedTutorials.length > 0 && (
             <div>
               <h3 className="text-[13.5px] font-bold mb-2.5">Tutorial Lain di Kategori Ini</h3>
-              <div className="grid grid-cols-2 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {relatedTutorials.map((rt) => (
                   <Link
                     key={rt.id}

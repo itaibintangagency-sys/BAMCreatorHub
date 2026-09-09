@@ -69,11 +69,11 @@ export default function TutorialForm({
   }
 
   return (
-    <form action={formAction} className="p-7 max-w-2xl">
+    <form action={formAction} className="p-4 md:p-7 max-w-2xl">
       <div className="bg-white border border-line rounded-md p-6 space-y-4">
         <Field label="Judul tutorial" name="title" required defaultValue={initialValues?.title} />
 
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-medium mb-1.5">Kategori</label>
             <select

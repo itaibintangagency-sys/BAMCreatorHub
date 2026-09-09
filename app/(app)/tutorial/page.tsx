@@ -96,7 +96,7 @@ export default async function TutorialPage({
   return (
     <>
       <Topbar title="Tutorial" profile={profile} />
-      <div className="p-7">
+      <div className="p-4 md:p-7">
         <div className="flex justify-end mb-4">
           {isInternal && (
             <Link

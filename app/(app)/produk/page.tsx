@@ -24,8 +24,8 @@ export default async function ProdukPage() {
   return (
     <>
       <Topbar title="Produk" profile={profile} />
-      <div className="p-7">
-        <div className="flex justify-between items-center mb-5">
+      <div className="p-4 md:p-7">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-5">
           <div className="text-[13px] text-ink-soft">
             Diurutkan berdasarkan tanggal kadaluarsa campaign
           </div>
@@ -60,7 +60,7 @@ function ProductGrid({ products }: { products: any[] }) {
   };
 
   return (
-    <div className="grid grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4 mb-6">
       {products.map((p) => {
         const left = p.campaign_deadline ? daysLeft(p.campaign_deadline) : null;
         return (
