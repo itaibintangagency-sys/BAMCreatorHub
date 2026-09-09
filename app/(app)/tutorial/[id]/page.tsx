@@ -109,10 +109,17 @@ export default async function TutorialDetailPage({ params }: { params: { id: str
             </div>
             <h2 className="text-xl font-extrabold mb-2">{tutorial.title}</h2>
             <p className="text-[13.5px] leading-7 text-ink-soft">{tutorial.description}</p>
+
+            <div className="flex gap-2 flex-wrap mt-3.5">
+              <PerkChip icon="📘" label="Modul Praktik" />
+              <PerkChip icon="💬" label="Grup Diskusi" />
+              <PerkChip icon="🏆" label="Badge Pencapaian" />
+            </div>
+
             {profile.role !== "creator" && (
               <Link
                 href={`/tutorial/${tutorial.id}/edit`}
-                className="inline-block mt-2 text-[12px] font-medium text-orange-dark hover:underline"
+                className="inline-block mt-3 text-[12px] font-medium text-orange-dark hover:underline"
               >
                 Edit tutorial &amp; link materi &rarr;
               </Link>
@@ -220,4 +227,13 @@ function materialTypeLabel(type: string) {
   if (type === "reading") return "Bacaan";
   if (type === "quiz") return "Quiz";
   return type;
+}
+
+function PerkChip({ icon, label }: { icon: string; label: string }) {
+  return (
+    <div className="flex items-center gap-1.5 bg-orange-lighter border border-orange-light px-3 py-1.5 rounded-md text-[11.5px] font-medium text-orange-dark">
+      <span>{icon}</span>
+      {label}
+    </div>
+  );
 }
